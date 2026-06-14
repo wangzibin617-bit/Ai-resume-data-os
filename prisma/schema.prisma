@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ExperienceType {
+  EDUCATION
+  INTERNSHIP
+  WORK
+  PROJECT
+  SKILL
+  CERTIFICATE
+  LANGUAGE
+  OTHER
+}
+
+enum FileStatus {
+  UPLOADED
+  PARSED
+  FAILED
+}
+
+enum ResumeStatus {
+  DRAFT
+  GENERATED
+  EDITED
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  uploadedFiles   UploadedFile[]
+  experiences     Experience[]
+  jobDescriptions JobDescription[]
+  resumes         Resume[]
+}
+
+model UploadedFile {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName  String
+  mimeType      String
+  size          Int
+  storagePath   String
+  parsedText    String?      @db.Text
+  status        FileStatus   @default(UPLOADED)
+  errorMessage  String?
+  createdAt     DateTime     @default(now())
+  experiences   Experience[]
+}
+
+model Experience {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadedFileId String?
+  uploadedFile   UploadedFile?  @relation(fields: [uploadedFileId], references: [id], onDelete: SetNull)
+  type           ExperienceType
+  title          String
+  organization   String?
+  startDate      DateTime?
+  endDate        DateTime?
+  location       String?
+  description    String         @db.Text
+  skills         String[]       @default([])
+  keywords       String[]       @default([])
+  source         String         @default("MANUAL")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model JobDescription {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  company           String?
+  rawText           String    @db.Text
+  responsibilities  String[]  @default([])
+  requiredSkills    String[]  @default([])
+  keywords          String[]  @default([])
+  preferredPoints   String[]  @default([])
+  analyzedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  resumes           Resume[]
+}
+
+model Resume {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobDescriptionId String?
+  jobDescription   JobDescription?  @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
+  title            String
+  content          String           @db.Text
+  matchScore       Int              @default(0)
+  matchedKeywords  String[]         @default([])
+  gaps             String[]         @default([])
+  report           Json?
+  status           ResumeStatus     @default(DRAFT)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  versions         ResumeVersion[]
+}
+
+model ResumeVersion {
+  id        String   @id @default(cuid())
+  resumeId  String
+  resume    Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  version   Int
+  content   String   @db.Text
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([resumeId, version])
+}

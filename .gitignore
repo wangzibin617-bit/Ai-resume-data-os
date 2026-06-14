@@ -1,0 +1,13 @@
+node_modules
+.next
+.env
+*.log
+work
+outputs
+tmp-upload-tests
+.agents
+.codex
+jd-test.png
+public/uploads/*
+!public/uploads/.gitkeep
+prisma/migrations
