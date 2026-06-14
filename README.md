@@ -1,120 +1,175 @@
-# 中文版 AI 智能简历优化小程序 MVP
+# AI Resume Optimizer CN
 
-这是一个基于 Next.js + TypeScript + Tailwind CSS + PostgreSQL + Prisma 的中文 AI 简历优化 MVP。
+中文版 AI 智能简历优化 MVP。项目面向中文求职场景，核心思路是先沉淀“个人资料库”，再根据目标岗位 JD 匹配真实经历，生成岗位定制简历、匹配度报告，并支持在线预览编辑和导出。
 
-## 已实现
+这个项目适合作为 AI 产品实习生作品集展示：它不是单纯让 AI 直接写简历，而是围绕“真实资料源 + JD 匹配 + 可控生成”设计完整产品流程。
 
-- 中文仪表盘与完整 MVP 页面入口
-- PDF / DOCX / TXT 上传接口与解析流程
-- 手动录入教育、实习、项目、工作、技能、证书、语言能力
-- Prisma 数据库模型：User、UploadedFile、Experience、JobDescription、Resume、ResumeVersion
-- 个人经历库保存与删除
-- 岗位 JD 分析接口
-- 基于经历库的简历生成接口
-- 匹配度报告
-- 简历预览、手动编辑、保存新版本
-- PDF / DOCX / TXT 导出接口
-- OpenAI API 集成入口；未配置密钥时使用本地规则兜底
+## 产品定位
+
+很多求职者的问题不是没有经历，而是经历分散、不会根据不同 JD 调整表达，或者容易让 AI 生成不真实内容。本项目尝试解决三个问题：
+
+- 把教育、实习、项目、技能、证书等经历沉淀成可复用的个人资料库
+- 根据目标 JD 自动分析岗位职责、关键词、技能要求和优先条件
+- 只基于用户真实资料生成定制简历，缺失能力进入匹配报告，不编造经历
+
+## 核心流程
+
+```text
+首页
+→ 个人资料中心
+→ 导入已有简历（可选，用于补全资料库）
+→ 输入岗位 JD
+→ 选择简历模板
+→ 生成定制简历
+→ 简历预览与编辑
+→ 导出 PDF / Word / TXT
+```
+
+## 已实现功能
+
+- 个人资料中心：管理基本信息、教育背景、实习经历、项目经历、技能、证书、语言能力等资料
+- 文件导入：支持 TXT / DOCX / PDF 简历材料解析
+- 资料库保存：解析后的结构化经历可保存到 `Experience` 表
+- JD 输入与分析：提取岗位职责、关键词、技能要求和优先条件
+- 简历生成：基于个人资料库和目标 JD 生成岗位定制简历
+- 匹配度报告：展示匹配经历、关键词覆盖和能力缺口
+- 简历预览：支持结构化简历预览、编辑和版本保存
+- 导出功能：支持 TXT / DOCX / PDF
+- PDF 中文处理：优先使用浏览器打印 PDF 方案，避免服务端默认字体导致中文乱码
+- 数据库异常兜底：数据库连接失败时页面显示中文提示，不直接崩溃
 
 ## AI 安全规则
 
-系统提示词和生成流程已内置以下规则：
+项目内置了面向简历场景的 AI 约束：
 
-- AI 不能编造用户不存在的经历
-- AI 只能基于用户真实提供的信息进行优化、筛选、重组和润色
-- JD 要求没有经历支撑时，必须标记为能力缺口
-- 简历内容保持中文求职场景下的专业、清晰、简洁和 ATS 友好
+- AI 不能编造用户不存在的公司、学校、项目、证书、数字成果或技能
+- AI 只能基于用户真实提供的信息进行筛选、重组、润色和表达优化
+- 如果 JD 中的要求没有资料支撑，必须在匹配度报告中标记为“能力缺口”
+- 简历内容需要适合中文求职场景，表达专业、清晰、简洁
+- 用户必须可以手动编辑 AI 生成内容，并保存为新版本
 
-## 本地 PostgreSQL 开发方案
+## 技术栈
 
-当前 Windows 本地环境连接 Neon PostgreSQL 时可能遇到 TLS 凭证问题。为了先跑通 MVP，建议本地开发阶段先使用本机 PostgreSQL，后续部署到 Vercel / Render 时再切回 Neon。
+- Framework: Next.js 14 / React 18 / TypeScript
+- UI: Tailwind CSS / lucide-react
+- Database: PostgreSQL
+- ORM: Prisma
+- AI: OpenAI API，未配置密钥时使用本地规则兜底
+- File parsing: mammoth / pdf-parse / 自定义 fallback parser
+- Export: docx / TXT / 浏览器打印 PDF
 
-本地数据库建议配置：
+## 数据模型
 
-- 数据库名：`ai_resume_optimizer`
-- 用户名：`postgres`
-- 密码：`postgres`
-- 端口：`5432`
+核心数据表：
 
-如果你使用 PostgreSQL 图形工具，可以创建：
+- `User`：用户
+- `UploadedFile`：上传文件记录
+- `Experience`：个人资料库 / 经历库
+- `JobDescription`：岗位 JD
+- `Resume`：生成简历
+- `ResumeVersion`：简历版本
 
-```sql
-CREATE DATABASE ai_resume_optimizer;
-```
+MVP 阶段本地数据库可以通过 `prisma/manual-init.sql` 手动初始化。
 
-如果你使用 `psql`，可以执行：
+## 本地运行
+
+### 1. 安装依赖
 
 ```powershell
-psql -U postgres
+npm.cmd install
 ```
 
-进入后执行：
+### 2. 配置环境变量
 
-```sql
-CREATE DATABASE ai_resume_optimizer;
-```
-
-然后将项目根目录 `.env` 临时改为本地连接：
+复制 `.env.example` 为 `.env`，填写：
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ai_resume_optimizer?schema=public"
 DIRECT_URL="postgresql://postgres:postgres@localhost:5432/ai_resume_optimizer?schema=public"
-OPENAI_API_KEY="你的 OpenAI API Key，可暂时留空"
+OPENAI_API_KEY=""
 OPENAI_MODEL="gpt-4o-mini"
+OPENAI_VISION_MODEL="gpt-4o-mini"
 ```
 
 说明：
 
-- `DATABASE_URL` 用于 Prisma Client 运行时连接数据库。
-- `DIRECT_URL` 在本地开发时可以与 `DATABASE_URL` 相同。
-- 不要提交 `.env` 到 Git。
-- Neon 连接信息可以先保留在你自己的记录里，MVP 本地跑通后再切回云数据库。
+- `DATABASE_URL` 用于 Prisma Client 连接数据库
+- `DIRECT_URL` 本地开发时可以和 `DATABASE_URL` 相同
+- `OPENAI_API_KEY` 可以暂时留空，系统会使用本地规则兜底
+- 不要提交 `.env` 到 GitHub
 
-## 本地运行
+### 3. 初始化本地 PostgreSQL
 
-1. 安装依赖
+建议本地数据库：
 
-```powershell
-npm.cmd install --cache .\work\npm-cache
+```text
+database: ai_resume_optimizer
+user: postgres
+password: postgres
+port: 5432
 ```
 
-2. 生成 Prisma Client
+创建数据库：
+
+```sql
+CREATE DATABASE ai_resume_optimizer;
+```
+
+如果 Prisma Schema Engine 在本地异常，可以使用手动 SQL：
+
+```powershell
+$env:PGPASSWORD="postgres"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -h localhost -p 5432 -d ai_resume_optimizer -f prisma/manual-init.sql
+Remove-Item Env:PGPASSWORD
+```
+
+### 4. 生成 Prisma Client
 
 ```powershell
 npm.cmd run prisma:generate
 ```
 
-3. 推送 schema 到本地 PostgreSQL
-
-MVP 阶段可以使用：
-
-```powershell
-npm.cmd exec -- prisma db push
-```
-
-正式版本建议补规范的 Prisma migration。
-
-4. 构建检查
+### 5. 构建检查
 
 ```powershell
 npm.cmd run build
 ```
 
-5. 启动开发服务器
+### 6. 启动开发服务器
 
 ```powershell
 npm.cmd run dev
 ```
 
-默认访问地址为 `http://localhost:3000`。如果 3000 端口被占用，Next.js 会自动使用 `http://localhost:3001` 等后续端口。
+默认访问：
 
-## 功能自检建议
+```text
+http://localhost:3000
+```
 
-本地数据库连接成功后，建议依次测试：
+如果 3000 被占用，Next.js 会自动使用 3001、3002 等端口。
 
-- 手动添加经历
-- 经历库读取
-- 输入岗位 JD
-- 生成定制简历
-- 简历预览与保存版本
-- 导出 PDF / DOCX / TXT
+## 面试展示重点
+
+可以从这几个角度介绍项目：
+
+1. 用户痛点：求职者有经历但不会针对不同 JD 优化简历
+2. 产品设计：以个人资料库作为唯一可信数据源，上传简历只是补全资料库
+3. AI 价值：分析 JD、匹配经历、优化表达、生成报告
+4. 安全边界：AI 不编造经历，缺失项进入能力缺口
+5. MVP 能力：从资料录入、JD 分析、简历生成到导出形成完整闭环
+6. 迭代思路：后续可优化 OCR、模板系统、在线部署、协同编辑和真实用户反馈
+
+## 已知限制
+
+- 当前仍是 MVP，不是生产级 SaaS
+- 扫描版 PDF 的 OCR 能力有限
+- 云端部署需要配置 PostgreSQL 和环境变量
+- OpenAI API Key 未配置时会使用本地规则兜底，生成质量低于真实模型
+- 正式版本建议补充标准 Prisma migration 和更完整的测试覆盖
+
+## 项目状态
+
+- 本地构建通过
+- GitHub 已托管源码
+- 适合作为 AI 产品实习生面试作品集项目
