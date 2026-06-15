@@ -24,6 +24,7 @@
 → 简历预览与编辑
 → 导出 PDF / Word / TXT
 ```
+<img width="2549" height="1403" alt="93be9e5a21196450995af13f2f74db82" src="https://github.com/user-attachments/assets/71dca46b-3a89-429b-a0d3-7f9256144513" />
 
 ## 已实现功能
 
